@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mark Attendance</title>
+
+  <!-- ✅ Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+  <style>
+    body {
+      background: #f5f7fa;
+    }
+    .camera-container {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    video {
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .footer-text {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-sm-10">
+        <div class="camera-container text-center">
+          <h3 class="mb-4">📸 Mark Attendance</h3>
+
+          <div class="mb-3">
+            <video id="video" width="100%" height="auto" autoplay playsinline></video>
+          </div>
+
+          <button id="capture" class="btn btn-success w-100 py-2">
+            ✅ Capture & Mark Attendance
+          </button>
+
+          <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+          <p id="status" class="footer-text mt-3"></p>
+        </div>
+
+        <div class="text-center mt-4">
+          <a href="/" class="btn btn-outline-secondary w-100">🏠 Back to Home</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ✅ Camera, Location, and Attendance Logic -->
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+
+    // Enable camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert('Camera access denied or not supported.'));
+
+    // Capture face + location + mark attendance
+    document.getElementById('capture').addEventListener('click', () => {
+      statusEl.innerText = "Capturing image and fetching location...";
+      context.drawImage(video, 0, 0, 320, 240);
+      const image_data = canvas.toDataURL('image/jpeg');
+
+      // Get location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const long = position.coords.longitude;
+
+          statusEl.innerText = "Submitting attendance...";
+
+          fetch('/mark_attendance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: image_data, lat, long })
+          })
+          .then(res => res.json())
+          .then(data => {
+            alert(data.message);
+            statusEl.innerText = data.message;
+
+            if (data.success) {
+              // Redirect to home after success
+              setTimeout(() => {
+                window.location.href = '/';
+              }, 2000);
+            }
+          })
+          .catch(err => {
+            alert("Error: " + err);
+            statusEl.innerText = "Error submitting attendance.";
+          });
+
+        }, error => {
+          alert("Location access denied. Please allow GPS for attendance.");
+          statusEl.innerText = "Location not available.";
+        });
+      } else {
+        alert("Geolocation not supported on this device.");
+      }
+    });
+  </script>
+
+</body>
+</html>
