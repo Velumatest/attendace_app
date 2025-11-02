@@ -1,7 +1,12 @@
 import traceback
 
 from flask import Flask, render_template, request, jsonify
+# import os
+
 import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Hide TF warnings
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Force CPU mode
+
 from datetime import datetime
 import sqlite3
 import base64
@@ -135,4 +140,5 @@ def save_face():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
